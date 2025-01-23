@@ -39,12 +39,13 @@ uns64       DRAM_MAP_POLICY=1; // SKYLAKE
 uns64       DRAM_SCHED_POLICY=0; // 0:FCFS 1:FR-FCFS
 uns64       DRAM_MOP_GANGSIZE = 8; 
 
-uns64       tRC=52*4; // all DRAM latencies specified as ns x 4 (4GHz processor)
+// all DRAM latencies specified as ns x 4 (4GHz processor)
+uns64       tRC=52*4;  // No-PRAC 48*4;
 uns64       tRFC=410*4;
 uns64       tACT=12*4;
 uns64       tCAS=12*4;
-uns64       tPRE=36*4;
-uns64       tRAS=16*4;
+uns64       tPRE=36*4; // No-PRAC 16*4;
+uns64       tRAS=16*4; // No-PRAC 32*4;
 uns64       tRDRD=3*4;
 uns64       tREFI=3900*4;
 uns64       tREFW=32*1000*1000*4;
@@ -112,6 +113,7 @@ void die_usage() {
   	printf("               -resetctronref             Reset ctr on ref for MOAT (Default:off)\n");
   	printf("               -moat_ath        <num>    MOAT ATH  (Default: 100-12)\n");
   	printf("               -moat_eth        <num>    MOAT ETH  (Default: 50)\n");
+	printf("               -noprac					 No PRAC (Default:off)\n");
     exit(0);
 }
 
@@ -141,7 +143,7 @@ void read_params(int argc, char **argv){
     //--------------------------------------------------------------------
     // -- Get command line options
     //--------------------------------------------------------------------    
-    for ( ii = 1; ii < argc; ii++) {
+    for ( ii = 1; ii < argc; ii++){
 	if (argv[ii][0] == '-') {	    
 	  if (!strcmp(argv[ii], "-h") || !strcmp(argv[ii], "-help")) {
 		die_usage();
@@ -170,6 +172,12 @@ void read_params(int argc, char **argv){
 	  
 	    else if (!strcmp(argv[ii], "-l3perfect")) {
 	      L3_PERFECT=1; 
+	    }
+
+		else if (!strcmp(argv[ii], "-noprac")) {
+	      tRC=48*4;  // No-PRAC 48*4;
+		  tPRE=16*4; // No-PRAC 16*4;
+		  tRAS=32*4; // No-PRAC 32*4;
 	    }
 
 

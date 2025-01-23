@@ -62,7 +62,6 @@ struct DRAM {
     uns64       s_tot_service_delay;
     uns64       s_tot_bus_delay;
     uns64       s_ACT_dist[16];
-    uns64       s_tot_RFM;
     uns64       s_tot_ALERT;
     uns64       s_tot_mitigs;
   

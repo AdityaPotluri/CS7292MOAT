@@ -204,12 +204,12 @@ void dram_gather_stats(DRAM *d){
   for(ii=0; ii< d->num_channels; ii++){
     for(jj=0; jj < d->num_banks/d->num_channels; jj++){
       for(kk=0; kk < d->num_rowbufs/d->num_banks; kk++){
-	uns val = d->channel[ii]->bank[jj]->PRAC[kk];
-	if(val> 1){
-	  uns log2val = (int)(log2(val));
-	  if(log2val>13){
-	    log2val=13;
-	  }
+	      uns val = d->channel[ii]->bank[jj]->PRAC[kk];
+	      if(val> 1){
+          uns log2val = (int)(log2(val));
+          if(log2val>13){
+            log2val=13;
+      }
 	  for(zz=1; zz<=log2val; zz++){
 	    //d->s_ACT_dist[zz]++; // unique-rows-count
 	    d->s_ACT_dist[zz]+= (int)(val/(1<<zz)); // dynamic count
@@ -250,7 +250,6 @@ void dram_print_stats(DRAM *d)
       d->s_tot_REQ +=  d->channel[ii]->bank[ii]->s_REQ;
       d->s_tot_service_delay +=  d->channel[ii]->bank[ii]->s_service_delay;
       d->s_tot_wait_delay +=  d->channel[ii]->bank[ii]->s_wait_delay;
-      d->s_tot_RFM  +=  d->channel[ii]->bank[ii]->s_RFM;
       d->s_tot_mitigs  +=  d->channel[ii]->bank[ii]->s_mitigs;
     }
   }

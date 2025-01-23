@@ -40,8 +40,8 @@ DRAM_Bank* dram_bank_new(uns bankid, uns channelid, uns num_rows)
     DRAM_MAX_TOPEN = tRAS; // closed page policy closes page after t_RAS
   }
 
-  // TODO: [TASK A] Allocate and Initialize the PRAC Counters
-
+  // [TASK A] Allocate and Initialize the PRAC Counters
+  b->PRAC = (uns *) calloc(num_rows, sizeof(uns));
 
   // TODO: [TASK B] Initialize the MOAT queue
   

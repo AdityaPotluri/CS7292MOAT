@@ -28,7 +28,7 @@ We will use the value of the statistics DRAM_MITIGS, DRAM_ALERTS and DRAM_MITIGP
 You need to report DRAM_MITIGS, DRAM_ALERTS and DRAM_MITIGPTREFW for ATH=64 and 128.
 
 ### Task-C - Implement MOAT-RP [3 points]
-See Section-9 of the paper. You will focus on the number of times the mitigation is invoked.  
+See Section-9 of the paper. You will focus on the number of times the mitigation is invoked and PRAC counters. Assume tEPOCH as 180ns. 
 
 #### **Grading Criteria:**  
 The points for this task will be awarded based on your results for the DRAM_MITIGS, DRAM_ALERTS and DRAM_MITIGPTREFW. 

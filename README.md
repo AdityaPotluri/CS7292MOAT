@@ -21,7 +21,7 @@ The second task is to implement MOAT that uses PRAC to protect against RH. Spefi
 3. Implement `dram_moat_mitig`, the function template in drambank.c has more details
 
 #### **Grading Criteria:**
-Evaluate MOAT with ATH=64 and ATH=128
+Evaluate MOAT with ATH=64 and ATH=128. Assume Blast Radius BR=2.
 We will use the value of the statistics DRAM_MITIGS, DRAM_ALERTS and DRAM_MITIGPTREFW to award points. +5 points if the values match the correct answer (+-5% error is acceptable), otherwise 0.
 
 #### **Deliverables:**

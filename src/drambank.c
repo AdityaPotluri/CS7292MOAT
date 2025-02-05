@@ -44,7 +44,10 @@ DRAM_Bank* dram_bank_new(uns bankid, uns channelid, uns num_rows)
   b->PRAC = (uns *) calloc(num_rows, sizeof(uns));
 
   // TODO: [TASK B] Initialize the MOAT queue
-  b->moat_queue[0] = -1;
+  for (int i = 0; i < MAX_MOAT_LEVEL; i++)
+  {
+    b->moat_queue[i] = -1;
+  }
   
   return b;
 }
@@ -404,13 +407,26 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
    return;
  }
 
- if (b->moat_queue[0] == -1)
+ for (int i = 0; i < MAX_MOAT_LEVEL; i++)
  {
-   b->moat_queue[0] = rowid;
-   return;
- } 
- 
- b->moat_queue[0] = b->PRAC[rowid] > b->PRAC[b->moat_queue[0]] ? rowid : b->moat_queue[0];
+   if (b->moat_queue[i] == -1)
+   {
+      b->moat_queue[i] = rowid;
+      return;
+   }
+ }
+ uns minimum_val = b->PRAC[b->moat_queue[0]];
+  int min_index = 0;
+  for (int i = 1; i < MAX_MOAT_LEVEL; i++)
+  {
+    if (b->PRAC[b->moat_queue[i]] < minimum_val)
+    {
+      minimum_val = b->PRAC[b->moat_queue[i]];
+      min_index = i;
+    }
+  }
+
+ b->moat_queue[min_index] = b->PRAC[rowid] > b->PRAC[b->moat_queue[min_index]] ? rowid : b->moat_queue[min_index];
  
 }
 
@@ -427,18 +443,31 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 // Make sure to increment the PRAC values of the neighboring rows
 void dram_moat_mitig(DRAM_Bank *b)
 {
-  if (b->moat_queue[0] == -1)
+  int victim_row = -1;
+  uns highest_prac = 0;
+  int entry = -1;
+  for (int i = 0; i < MAX_MOAT_LEVEL; i++)
+  {
+    if (b->moat_queue[i] != -1)
+    {
+      victim_row = b->PRAC[b->moat_queue[i]] > highest_prac ? b->moat_queue[i] : victim_row;
+      highest_prac = b->PRAC[b->moat_queue[i]] > highest_prac ? b->PRAC[b->moat_queue[i]] : highest_prac;
+    }
+    entry = i;
+  }
+
+  if (victim_row == -1)
   {
     return;
   }
 
-  b->PRAC[b->moat_queue[0]] = 0;
-  b->PRAC[(b->moat_queue[0] - 1) % b->num_rows]++;
-  b->PRAC[(b->moat_queue[0] + 1) % b->num_rows]++;
-  b->PRAC[(b->moat_queue[0] - 2) % b->num_rows]++;
-  b->PRAC[(b->moat_queue[0] + 2) % b->num_rows]++;
-  b->moat_queue[0] = -1;
-  b->s_mitigs++;
+  b->PRAC[victim_row] = 0;
+  b->PRAC[(victim_row - 1) % b->num_rows]++;
+  b->PRAC[(victim_row + 1) % b->num_rows]++;
+  b->PRAC[(victim_row - 2) % b->num_rows]++;
+  b->PRAC[(victim_row + 2) % b->num_rows]++;
+  
+  b->moat_queue[entry] = -1;
 
 }
 

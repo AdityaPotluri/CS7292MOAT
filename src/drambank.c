@@ -399,6 +399,11 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
    memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
  }  
 
+ if (b->PRAC[rowid] <= MOAT_ETH)
+ {
+   return;
+ }
+
  if (b->moat_queue[0] == -1)
  {
    b->moat_queue[0] = rowid;

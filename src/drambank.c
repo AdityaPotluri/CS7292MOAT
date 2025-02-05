@@ -44,6 +44,7 @@ DRAM_Bank* dram_bank_new(uns bankid, uns channelid, uns num_rows)
   b->PRAC = (uns *) calloc(num_rows, sizeof(uns));
 
   // TODO: [TASK B] Initialize the MOAT queue
+  b->moat_queue[0] = -1;
   
   return b;
 }
@@ -393,7 +394,19 @@ void  dram_bank_alert(DRAM_Bank *b, uns64 in_cycle)
 // If the MOAT queue is full, replace the rowid with the minimum PRAC value in the MOAT queue
 void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 {
+ if (PRAC[rowid] > MOAT_ATH)
+ {
+   memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
+ }  
 
+ if (b->moat_queue[0] == -1)
+ {
+   b->moat_queue[0] = rowid;
+   return;
+ } 
+ 
+ b->moat_queue[0] = PRAC[rowid] > PRAC[b->moat_queue[0]] ? rowid : b->moatqueue[0];
+ 
 }
 
 
@@ -409,6 +422,16 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 // Make sure to increment the PRAC values of the neighboring rows
 void dram_moat_mitig(DRAM_Bank *b)
 {
+  if (b->moat_queue[0] == -1)
+  {
+    return;
+  }
+
+  b->PRAC[b->moat_queue[0]] = 0;
+  b->PRAC[(b->moat_queue[0] - 1) % b->num_rows]++;
+  b->PRAC[(b->moat_queue[0] + 1) % b->num_rows]++;
+  b->moat_queue[0] = -1;
+  b->s_mitigs++;
 
 }
 

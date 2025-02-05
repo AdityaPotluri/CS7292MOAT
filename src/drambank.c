@@ -394,7 +394,7 @@ void  dram_bank_alert(DRAM_Bank *b, uns64 in_cycle)
 // If the MOAT queue is full, replace the rowid with the minimum PRAC value in the MOAT queue
 void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 {
- if (PRAC[rowid] > MOAT_ATH)
+ if (b->PRAC[rowid] > MOAT_ATH)
  {
    memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
  }  
@@ -405,7 +405,7 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
    return;
  } 
  
- b->moat_queue[0] = PRAC[rowid] > PRAC[b->moat_queue[0]] ? rowid : b->moatqueue[0];
+ b->moat_queue[0] = b->PRAC[rowid] > b->PRAC[b->moat_queue[0]] ? rowid : b->moat_queue[0];
  
 }
 

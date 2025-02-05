@@ -287,6 +287,7 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     b->s_ACT++; // counted only for RD and WR
 
     // TODO: [Task A] Update the PRAC counters
+    b->PRAC[rowid]++;
     
     // [Task B] Check the PRAC value of rowid and insert in MOAT queue
     if(ENABLE_MOAT)
@@ -342,11 +343,15 @@ void dram_bank_refresh(DRAM_Bank *b, uns64 in_cycle){
     // TODO: [Task A] Reset the PRAC counters, remember the rows are refreshed in 8192 chunks
     if(RESET_CTR_ON_REF)
     {
-
+      for (int i = 0; i < 8; i++)
+      {
+        int row_ind = ((b->ref_ptr) * 8) + i;
+        b->PRAC[row_ind] = 0; 
+      }
     }
 
 	
-    b->ref_ptr = (b->ref_ptr+1)%8192;
+    b->ref_ptr = (b->ref_ptr+1) % 8192;
 
     // [Task B] Issue a MOAT mitigation
     if(REFS_PER_MITIG && b->ref_ptr % REFS_PER_MITIG == 0)

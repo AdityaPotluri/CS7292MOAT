@@ -435,6 +435,8 @@ void dram_moat_mitig(DRAM_Bank *b)
   b->PRAC[b->moat_queue[0]] = 0;
   b->PRAC[(b->moat_queue[0] - 1) % b->num_rows]++;
   b->PRAC[(b->moat_queue[0] + 1) % b->num_rows]++;
+  b->PRAC[(b->moat_queue[0] - 2) % b->num_rows]++;
+  b->PRAC[(b->moat_queue[0] + 2) % b->num_rows]++;
   b->moat_queue[0] = -1;
   b->s_mitigs++;
 

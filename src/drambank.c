@@ -422,7 +422,7 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
   // If no empty slot was found, find the entry with the minimum PRAC value.
   uns minimum_val = b->PRAC[b->moat_queue[0]];
   int min_index = 0;
-  for (int i = 1; i < MOAT_LEVEL; i++)
+  for (uns i = 1; i < MOAT_LEVEL; i++)
   {
     if (b->PRAC[b->moat_queue[i]] < minimum_val)
     {
@@ -458,7 +458,7 @@ void dram_moat_mitig(DRAM_Bank *b)
 
   // Iterate over the MOAT queue entries (here, the loop is for 1 entry; 
   // in a more general case, the limit should match the size of moat_queue)
-  for (int i = 0; i < MOAT_LEVEL; i++)
+  for (uns i = 0; i < MOAT_LEVEL; i++)
   {
     if (b->moat_queue[i] != -1)
     {

@@ -55,7 +55,7 @@ uns64       tALERT=350*4; //-- only 350ns of stall out of 530
 
 uns64       DRAM_MAX_TOPEN   = 3900*4;
 uns64       ENABLE_MOAT      =0; // MOAT
-uns64       ENABLE_RP        =1; // OAT-RP	
+uns64       ENABLE_RP        =0; // OAT-RP	
 uns64       MOAT_LEVEL       =1; // MOAT ABO LEVEL
 uns64       REFS_PER_MITIG   =5; // mitigation rate
 uns64       RESET_CTR_ON_REF = 0; // MOAT

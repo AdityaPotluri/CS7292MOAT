@@ -251,12 +251,11 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
                     increment = 1;
                 } else if(tON <= 360) {  // up to 360ns
                     increment = 2;
-                } else if(tON <= 3490) {  // up to tREFI-tRFC (3490ns)
-                    increment = (tON * 20) / 3490;  // Scale up to max 20
+                } else {  // up to tREFI-tRFC (3490ns)
+                    increment = 20;  // Maximum increment for long open times
                 }
                 
-                // Apply DPE (1.5x) multiplier
-                b->PRAC[b->open_row_id] += (increment * 3) / 2;
+                b->PRAC[b->open_row_id] += increment;
             }
             
             b->row_valid = FALSE;
@@ -322,10 +321,8 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
   {
         b->s_ACT++; // counted only for RD and WR
         
-        // Update PRAC counter for activation (but not for row pattern)
-        
+        // Always increment PRAC for activations, regardless of RP mode
         b->PRAC[rowid]++;
-        
         
         // Check MOAT queue
         if(ENABLE_MOAT)
@@ -473,14 +470,12 @@ void dram_moat_mitig(DRAM_Bank *b)
     b->PRAC[victim_row] = 0;
 
     // Increment PRAC values of neighboring rows
-    // For row pattern attacks, we increment by 1 for each neighbor
-    // as they are potentially affected by the row being open
     for (int offset = -2; offset <= 2; offset++) {
         if (offset == 0) continue;
         
         int neighbor = victim_row + offset;
         if (neighbor >= 0 && neighbor < (int) b->num_rows) {
-            b->PRAC[neighbor]++;  // Increment by 1 for each epoch of potential exposure
+            b->PRAC[neighbor]++;
         }
     }
 

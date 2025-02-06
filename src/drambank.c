@@ -469,9 +469,9 @@ void dram_moat_mitig(DRAM_Bank *b)
 
   b->PRAC[victim_row] = 0;
   if (victim_row - 1 >= 0) { b->PRAC[(victim_row - 1) ]++; }
-  if (victim_row + 1 < b->num_rows) { b->PRAC[(victim_row + 1)]++; }
+  if (victim_row + 1 < (int) b->num_rows) { b->PRAC[(victim_row + 1)]++; }
   if (victim_row - 2 >= 0) { b->PRAC[(victim_row - 2) ]++; }
-  if (victim_row + 2 < b->num_rows) { b->PRAC[(victim_row + 2)]++; }
+  if (victim_row + 2 < (int) b->num_rows) { b->PRAC[(victim_row + 2)]++; }
   
   b->moat_queue[entry] = -1;
 }

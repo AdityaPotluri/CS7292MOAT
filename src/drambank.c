@@ -256,9 +256,10 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
                 
                 b->PRAC[b->open_row_id] += increment;
 
-                // Only check for alert, don't do immediate mitigation
-                if (ENABLE_MOAT && b->PRAC[b->open_row_id] >= MOAT_ATH) {
-                    memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
+                // Check for alert and insert into MOAT queue if needed
+                if(ENABLE_MOAT)
+                {
+                    dram_moat_check_insert(b, b->open_row_id);
                 }
             }
             
@@ -327,12 +328,9 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     // Always increment PRAC for activations
     b->PRAC[rowid]++;
     
+    // Check MOAT queue after activation
     if(ENABLE_MOAT)
     {
-        // Only check for alert, don't do immediate mitigation
-        if(b->PRAC[rowid] >= MOAT_ATH) {
-            memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
-        }
         dram_moat_check_insert(b, rowid);
     }
   }

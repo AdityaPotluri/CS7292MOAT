@@ -448,7 +448,7 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 // Make sure to increment the PRAC values of the neighboring rows
 void dram_moat_mitig(DRAM_Bank *b)
 {
-  uns victim_row = -1;
+  int victim_row = -1;
   uns highest_prac = 0;
   int entry = -1;
 

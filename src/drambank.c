@@ -323,9 +323,9 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
         b->s_ACT++; // counted only for RD and WR
         
         // Update PRAC counter for activation (but not for row pattern)
-        if(!ENABLE_RP) {
-            b->PRAC[rowid]++;
-        }
+        
+        b->PRAC[rowid]++;
+        
         
         // Check MOAT queue
         if(ENABLE_MOAT)

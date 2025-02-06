@@ -258,14 +258,16 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
                 b->PRAC[b->open_row_id] += increment;
 
                 // Check for alert threshold after RP update
-                if(b->PRAC[b->open_row_id] >= MOAT_ATH) {
-                    memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
-                    // Force mitigation on alert
-                    if (ENABLE_MOAT)
-                    {
-                        dram_moat_mitig(b);
-                    }
-                }
+                if (ENABLE_MOAT)
+                {
+                  if(b->PRAC[b->open_row_id] >= MOAT_ATH) {
+                      memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
+                      // Force mitigation on alert
+                      
+                          dram_moat_mitig(b);
+                      }
+                  }
+            }
             }
             
             b->row_valid = FALSE;

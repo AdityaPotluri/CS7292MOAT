@@ -399,7 +399,7 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 {
     // Check if row is already in MOAT queue
     for (uns i = 0; i < MAX_MOAT_LEVEL; i++) {
-        if (b->moat_queue[i] == rowid) {
+        if (b->moat_queue[i] == (int) rowid) {
             return;  // Row already being tracked
         }
     }

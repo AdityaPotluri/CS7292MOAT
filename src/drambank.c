@@ -257,16 +257,10 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
                 
                 b->PRAC[b->open_row_id] += increment;
 
-                // Check for alert threshold after RP update
-                if (ENABLE_MOAT)
-                {
-                  if(b->PRAC[b->open_row_id] >= MOAT_ATH) {
-                      memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
-                      // Force mitigation on alert
-                      
-                          dram_moat_mitig(b);
-                      }
-                  }
+                // Only check for alert, don't do immediate mitigation
+                if (ENABLE_MOAT && b->PRAC[b->open_row_id] >= MOAT_ATH) {
+                    memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
+                }
             }
             }
             
@@ -336,13 +330,11 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
         // Always increment PRAC for activations
         b->PRAC[rowid]++;
         
-        // Check MOAT queue and alert after activation update
         if(ENABLE_MOAT)
         {
+            // Only check for alert, don't do immediate mitigation
             if(b->PRAC[rowid] >= MOAT_ATH) {
                 memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
-                // Force mitigation on alert
-                dram_moat_mitig(b);
             }
             dram_moat_check_insert(b, rowid);
         }
@@ -447,6 +439,7 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
     // If PRAC value exceeds the alert threshold, raise alert
     if (b->PRAC[rowid] >= MOAT_ATH) {
         memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
+        // Don't do immediate mitigation here - let the regular mitigation handle it
     }
 
     // Only proceed if PRAC value exceeds entry threshold

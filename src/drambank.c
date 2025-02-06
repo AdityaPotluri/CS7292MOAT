@@ -236,15 +236,36 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     //check for early page closure
     if(b->row_valid)
     {
-      if(cycle  >= b->rowbufclose_cycle)
-      {
-	      b->row_valid = FALSE;
-	      uns64 delta = cycle - b->rowbufclose_cycle;
-	      if(delta < tPRE)
+        if(cycle >= b->rowbufclose_cycle)
         {
-	        act_delay += (tPRE-delta);
-	      }
-      }
+            // This is where precharge happens - update PRAC counter here for MOAT-RP
+            if(ENABLE_RP)
+            {
+                uns64 tON = cycle - b->rowbufopen_cycle;
+                // Convert cycles to ns (assuming 4 cycles = 1ns)
+                tON = tON / 4;
+                
+                // Calculate PRAC increment based on tON duration
+                uns increment = 0;
+                if(tON <= 180) {  // up to 180ns
+                    increment = 1;
+                } else if(tON <= 360) {  // up to 360ns
+                    increment = 2;
+                } else if(tON <= 3490) {  // up to tREFI-tRFC (3490ns)
+                    increment = (tON * 20) / 3490;  // Scale up to max 20
+                }
+                
+                // Apply DPE (1.5x) multiplier
+                b->PRAC[b->open_row_id] += (increment * 3) / 2;
+            }
+            
+            b->row_valid = FALSE;
+            uns64 delta = cycle - b->rowbufclose_cycle;
+            if(delta < tPRE)
+            {
+                act_delay += (tPRE-delta);
+            }
+        }
     }
 
     // empty
@@ -299,27 +320,18 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
   //---- if ACT done, update states, PRAC, MOAT -------
   if(new_act)
   {
-
-    // TODO: [Task A] Update the PRAC counters
-    b->s_ACT++; // counted only for RD and WR
-
-    // TODO: [Task A] Update the PRAC counters
-    b->PRAC[rowid]++;
-    
-    // [Task B] Check the PRAC value of rowid and insert in MOAT queue
-    if(ENABLE_MOAT)
-    {
-      dram_moat_check_insert(b, rowid);
-    }
-    // Task C: update the PRAC counters based on how long the page was open
-    if(ENABLE_RP)
-    {
-      int tON = cycle - b->rowbufopen_cycle;
-      int tEPOCH = 180;
-      int DPE = 1.5;
-      int num_epochs = tON / tEPOCH;
-      b->PRAC[rowid] += num_epochs * DPE;
-    }
+        b->s_ACT++; // counted only for RD and WR
+        
+        // Update PRAC counter for activation (but not for row pattern)
+        if(!ENABLE_RP) {
+            b->PRAC[rowid]++;
+        }
+        
+        // Check MOAT queue
+        if(ENABLE_MOAT)
+        {
+            dram_moat_check_insert(b, rowid);
+        }
   }
 
   return retval;

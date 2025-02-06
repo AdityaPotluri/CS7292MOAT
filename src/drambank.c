@@ -410,7 +410,7 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
   }  
 
   // Try to find an empty slot in the MOAT queue.
-  for (int i = 0; i < MOAT_LEVEL; i++)
+  for (uns i = 0; i < MOAT_LEVEL; i++)
   {
     if (b->moat_queue[i] == -1)
     {

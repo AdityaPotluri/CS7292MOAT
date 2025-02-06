@@ -409,7 +409,7 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 
  
 
- for (int i = 0; i < MAX_MOAT_LEVEL; i++)
+ for (int i = 0; i < 1; i++)
  {
    if (b->moat_queue[i] == -1)
    {
@@ -420,7 +420,7 @@ void  dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 
   uns minimum_val = b->PRAC[b->moat_queue[0]];
   int min_index = 0;
-  for (int i = 1; i < MAX_MOAT_LEVEL; i++)
+  for (int i = 1; i < 1; i++)
   {
     if (b->PRAC[b->moat_queue[i]] < minimum_val)
     {
@@ -452,7 +452,7 @@ void dram_moat_mitig(DRAM_Bank *b)
   uns highest_prac = 0;
   int entry = -1;
 
-  for (int i = 0; i < MAX_MOAT_LEVEL; i++)
+  for (int i = 0; i < 1; i++)
   {
     if ( b->moat_queue[i] != -1 )
     {
@@ -468,9 +468,9 @@ void dram_moat_mitig(DRAM_Bank *b)
   if (victim_row == -1) { return; }
 
   b->PRAC[victim_row] = 0;
-  if (victim_row - 1 >= 0) { b->PRAC[(victim_row - 1) ]++; }
+  if (victim_row - 1 >= 0) { b->PRAC[(victim_row - 1)]++; }
   if (victim_row + 1 < (int) b->num_rows) { b->PRAC[(victim_row + 1)]++; }
-  if (victim_row - 2 >= 0) { b->PRAC[(victim_row - 2) ]++; }
+  if (victim_row - 2 >= 0) { b->PRAC[(victim_row - 2)]++; }
   if (victim_row + 2 < (int) b->num_rows) { b->PRAC[(victim_row + 2)]++; }
   
   b->moat_queue[entry] = -1;

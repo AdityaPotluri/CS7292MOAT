@@ -454,7 +454,7 @@ void dram_moat_mitig(DRAM_Bank *b)
 {
   int victim_row = -1;
   uns highest_prac = 0;
-  int entry = -1;
+  int entry = 0;
 
   // Iterate over the MOAT queue entries (here, the loop is for 1 entry; 
   // in a more general case, the limit should match the size of moat_queue)
@@ -462,7 +462,7 @@ void dram_moat_mitig(DRAM_Bank *b)
   {
     if (b->moat_queue[i] != -1)
     {
-      if (b->PRAC[b->moat_queue[i]] > highest_prac)
+      if (b->PRAC[b->moat_queue[i]] > highest_prac || victim_row == -1)
       {
         victim_row = b->moat_queue[i];
         highest_prac = b->PRAC[b->moat_queue[i]];

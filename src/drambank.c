@@ -414,23 +414,28 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
         return;
     }
 
-    // Find empty slot or slot with minimum PRAC value
-    int insert_idx = -1;
-    uns min_prac = b->PRAC[rowid];
-    
+    // First try to find an empty slot
     for (uns i = 0; i < MAX_MOAT_LEVEL; i++) {
         if (b->moat_queue[i] == -1) {
-            insert_idx = i;
-            break;
-        }
-        if (b->PRAC[b->moat_queue[i]] < min_prac) {
-            min_prac = b->PRAC[b->moat_queue[i]];
-            insert_idx = i;
+            b->moat_queue[i] = rowid;
+            return;
         }
     }
 
-    if (insert_idx >= 0) {
-        b->moat_queue[insert_idx] = rowid;
+    // If no empty slot, find entry with minimum PRAC value
+    int min_idx = 0;
+    uns min_prac = b->PRAC[b->moat_queue[0]];
+    
+    for (uns i = 1; i < MAX_MOAT_LEVEL; i++) {
+        if (b->PRAC[b->moat_queue[i]] < min_prac) {
+            min_prac = b->PRAC[b->moat_queue[i]];
+            min_idx = i;
+        }
+    }
+
+    // Only replace if new row's PRAC value is higher
+    if (b->PRAC[rowid] > min_prac) {
+        b->moat_queue[min_idx] = rowid;
     }
 }
 
@@ -465,13 +470,13 @@ void dram_moat_mitig(DRAM_Bank *b)
     // Reset victim row's PRAC counter
     b->PRAC[victim_row] = 0;
 
-    // Double PRAC values of neighboring rows
+    
     for (int offset = -2; offset <= 2; offset++) {
         if (offset == 0) continue;
         
         int neighbor = victim_row + offset;
         if (neighbor >= 0 && neighbor < (int)b->num_rows) {
-            b->PRAC[neighbor] *= 2;
+            b->PRAC[neighbor]++;
         }
     }
 

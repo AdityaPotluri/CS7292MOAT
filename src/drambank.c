@@ -397,10 +397,7 @@ void  dram_bank_alert(DRAM_Bank *b, uns64 in_cycle)
 // If the MOAT queue is full, replace the rowid with the minimum PRAC value in the MOAT queue
 void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 {
-    // Check if row is already in MOAT queue
-    if (b->moat_queue[0] == (int)rowid) {
-        return;  // Row already being tracked
-    }
+    
 
     // If PRAC value exceeds the alert threshold, raise alert
     if (b->PRAC[rowid] >= MOAT_ATH) {
@@ -410,6 +407,11 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
     // Only proceed if PRAC value exceeds entry threshold
     if (b->PRAC[rowid] <= MOAT_ETH) {
         return;
+    }
+
+    // Check if row is already in MOAT queue
+    if (b->moat_queue[0] == (int)rowid) {
+        return;  // Row already being tracked
     }
 
     // If queue is empty or new row has higher PRAC value, insert it

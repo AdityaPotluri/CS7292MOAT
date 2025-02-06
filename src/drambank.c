@@ -398,10 +398,8 @@ void  dram_bank_alert(DRAM_Bank *b, uns64 in_cycle)
 void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 {
     // Check if row is already in MOAT queue
-    for (uns i = 0; i < MAX_MOAT_LEVEL; i++) {
-        if (b->moat_queue[i] == (int) rowid) {
-            return;  // Row already being tracked
-        }
+    if (b->moat_queue[0] == (int)rowid) {
+        return;  // Row already being tracked
     }
 
     // If PRAC value exceeds the alert threshold, raise alert
@@ -414,28 +412,9 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
         return;
     }
 
-    // First try to find an empty slot
-    for (uns i = 0; i < MAX_MOAT_LEVEL; i++) {
-        if (b->moat_queue[i] == -1) {
-            b->moat_queue[i] = rowid;
-            return;
-        }
-    }
-
-    // If no empty slot, find entry with minimum PRAC value
-    int min_idx = 0;
-    uns min_prac = b->PRAC[b->moat_queue[0]];
-    
-    for (uns i = 1; i < MAX_MOAT_LEVEL; i++) {
-        if (b->PRAC[b->moat_queue[i]] < min_prac) {
-            min_prac = b->PRAC[b->moat_queue[i]];
-            min_idx = i;
-        }
-    }
-
-    // Only replace if new row's PRAC value is higher
-    if (b->PRAC[rowid] > min_prac) {
-        b->moat_queue[min_idx] = rowid;
+    // If queue is empty or new row has higher PRAC value, insert it
+    if (b->moat_queue[0] == -1 || b->PRAC[rowid] > b->PRAC[b->moat_queue[0]]) {
+        b->moat_queue[0] = rowid;
     }
 }
 
@@ -452,25 +431,15 @@ void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 // Make sure to increment the PRAC values of the neighboring rows
 void dram_moat_mitig(DRAM_Bank *b)
 {
-    // Find row with maximum PRAC value in MOAT queue
-    int max_idx = -1;
-    uns max_prac = 0;
+    // Return if queue is empty
+    if (b->moat_queue[0] == -1) return;
 
-    for (uns i = 0; i < MAX_MOAT_LEVEL; i++) {
-        if (b->moat_queue[i] != -1 && b->PRAC[b->moat_queue[i]] > max_prac) {
-            max_prac = b->PRAC[b->moat_queue[i]];
-            max_idx = i;
-        }
-    }
-
-    if (max_idx == -1) return;  // No valid entries found
-
-    uns victim_row = b->moat_queue[max_idx];
+    uns victim_row = b->moat_queue[0];
     
     // Reset victim row's PRAC counter
     b->PRAC[victim_row] = 0;
 
-    
+    // Increment PRAC values of neighboring rows
     for (int offset = -2; offset <= 2; offset++) {
         if (offset == 0) continue;
         
@@ -480,8 +449,8 @@ void dram_moat_mitig(DRAM_Bank *b)
         }
     }
 
-    // Remove from MOAT queue
-    b->moat_queue[max_idx] = -1;
+    // Clear the queue entry
+    b->moat_queue[0] = -1;
     
     // Increment mitigation counter
     b->s_mitigs++;

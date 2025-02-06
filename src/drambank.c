@@ -228,7 +228,6 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
 
   assert(b->status != DRAM_BANK_BUSY);
 
-  
   // if type == N, figure out the delay, sleep time, rowbuffer staus
   if( (type == DRAM_REQ_RD) || (type == DRAM_REQ_WB)){
     uns64 act_delay=0;
@@ -261,7 +260,6 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
                 if (ENABLE_MOAT && b->PRAC[b->open_row_id] >= MOAT_ATH) {
                     memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
                 }
-            }
             }
             
             b->row_valid = FALSE;
@@ -309,7 +307,6 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     b->sleep_cycle = cycle + act_delay + tRDRD;
   }
 
-
   if(type == DRAM_REQ_NRR)
   {
     b->status = DRAM_BANK_BUSY;
@@ -325,19 +322,19 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
   //---- if ACT done, update states, PRAC, MOAT -------
   if(new_act)
   {
-        b->s_ACT++; // counted only for RD and WR
-        
-        // Always increment PRAC for activations
-        b->PRAC[rowid]++;
-        
-        if(ENABLE_MOAT)
-        {
-            // Only check for alert, don't do immediate mitigation
-            if(b->PRAC[rowid] >= MOAT_ATH) {
-                memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
-            }
-            dram_moat_check_insert(b, rowid);
+    b->s_ACT++; // counted only for RD and WR
+    
+    // Always increment PRAC for activations
+    b->PRAC[rowid]++;
+    
+    if(ENABLE_MOAT)
+    {
+        // Only check for alert, don't do immediate mitigation
+        if(b->PRAC[rowid] >= MOAT_ATH) {
+            memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
         }
+        dram_moat_check_insert(b, rowid);
+    }
   }
 
   return retval;

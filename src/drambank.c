@@ -210,6 +210,17 @@ void dram_bank_remove(DRAM_Bank *b,  uns index){
 // sleeps, returns delay for done 
 ////////////////////////////////////////////////////////////
 
+/*OAT-RP converts the row-open time (tON) into an equiva-
+lent number of activations [35]. The bank measures tON and
+divides it into epochs of duration tEPOCH. We use a tEPOCH
+of 180ns. If each Rowhammer activation incurs a charge loss
+of 1 unit, keeping the row open for up to 180 ns incurs a
+charge loss of 1.5 units [ 26 ]. We call this Damage-Per-Epoch
+(DPE). A pattern keeping the row-open for up-to 180ns in-
+crements the PRAC counter by 1, for up-to 360ns by 2, and
+up-to 3490ns (tREFI-tRFC) by 20. Then, MOAT can obtain
+the effective damage as PRAC counter times DPE (1.5x). */
+
 uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
 {
   uns64 retval=0;
@@ -288,6 +299,8 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
   //---- if ACT done, update states, PRAC, MOAT -------
   if(new_act)
   {
+
+    // TODO: [Task A] Update the PRAC counters
     b->s_ACT++; // counted only for RD and WR
 
     // TODO: [Task A] Update the PRAC counters
@@ -298,7 +311,15 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     {
       dram_moat_check_insert(b, rowid);
     }
-    
+    // Task C: update the PRAC counters based on how long the page was open
+    if(ENABLE_RP)
+    {
+      int tON = cycle - b->rowbufopen_cycle;
+      int tEPOCH = 180;
+      int DPE = 1.5;
+      int num_epochs = tON / tEPOCH;
+      b->PRAC[rowid] += num_epochs * DPE;
+    }
   }
 
   return retval;
@@ -397,8 +418,6 @@ void  dram_bank_alert(DRAM_Bank *b, uns64 in_cycle)
 // If the MOAT queue is full, replace the rowid with the minimum PRAC value in the MOAT queue
 void dram_moat_check_insert(DRAM_Bank *b, uns rowid)
 {
-    
-
     // If PRAC value exceeds the alert threshold, raise alert
     if (b->PRAC[rowid] >= MOAT_ATH) {
         memsys->mainmem->channel[b->channelid]->ALERT = TRUE;
@@ -442,12 +461,14 @@ void dram_moat_mitig(DRAM_Bank *b)
     b->PRAC[victim_row] = 0;
 
     // Increment PRAC values of neighboring rows
+    // For row pattern attacks, we increment by 1 for each neighbor
+    // as they are potentially affected by the row being open
     for (int offset = -2; offset <= 2; offset++) {
         if (offset == 0) continue;
         
         int neighbor = victim_row + offset;
-        if (neighbor >= 0 && neighbor < (int)b->num_rows) {
-            b->PRAC[neighbor]++;
+        if (neighbor >= 0 && neighbor < (int) b->num_rows) {
+            b->PRAC[neighbor]++;  // Increment by 1 for each epoch of potential exposure
         }
     }
 

@@ -370,6 +370,10 @@ void read_params(int argc, char **argv){
 	    else if (!strcmp(argv[ii], "-enablemoat")) {
 	      ENABLE_MOAT = 1;
 	    }
+
+		else if (!strcmp(argv[ii], "-enablerp")) {
+			ENABLE_RP = 1;
+		}
 	  
 	    else if (!strcmp(argv[ii], "-refspermitig")) {
 		if (ii < argc - 1) {		  

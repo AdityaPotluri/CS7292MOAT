@@ -38,6 +38,7 @@ extern uns64       RESET_CTR_ON_REF;
 extern uns64       MOAT_ATH;
 extern uns64       MOAT_ETH;
 extern uns64       MOAT_LEVEL;
+extern uns64       ENABLE_RP;
 
 extern uns64       tRC;
 extern uns64       tRFC;

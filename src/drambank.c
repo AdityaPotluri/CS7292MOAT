@@ -237,15 +237,14 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     {
         if(cycle >= b->rowbufclose_cycle)
         {
-            // Calculate how long the row was open before precharge
+            // At precharge time, calculate how long the row was open
             if(ENABLE_RP)
             {
                 uns64 cycles_open = cycle - b->rowbufopen_cycle;
-                // Convert cycles to ns based on 4GHz frequency
-                // At 4GHz, 1 cycle = 0.25ns, so multiply by 0.25
-                uns64 tON = (cycles_open * 25) / 100;  // Multiply by 0.25 using integer math
+                // Convert cycles to ns (4 cycles = 1ns at 4GHz)
+                uns64 tON = cycles_open / 4;
                 
-                // Calculate PRAC increment based on tON duration as per paper
+                // Calculate PRAC increment based on tON duration
                 uns increment = 0;
                 if(tON <= 180) {  // up to 180ns
                     increment = 1;

@@ -241,22 +241,21 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
             if(ENABLE_RP)
             {
                 uns64 tON = cycle - b->rowbufopen_cycle;
-                // Convert cycles to ns (assuming 4 cycles = 1ns)
+                // Convert cycles to ns (1 cycle = 0.25ns, so divide by 4)
                 tON = tON / 4;
                 
-                // Calculate PRAC increment based on tON duration
-                uns increment = 0;
-                if(tON <= 180) {  // up to 180ns
-                    increment = 1;
-                } else if(tON <= 360) {  // up to 360ns
-                    increment = 2;
-                } else {  // up to tREFI-tRFC (3490ns)
-                    increment = 20;  // Maximum increment for long open times
-                }
+                // Calculate number of 180ns epochs
+                uns num_epochs = tON / 180;
+                if(tON % 180) num_epochs++; // Round up for partial epochs
+                
+                // Each epoch causes 1.5x damage
+                uns increment = (num_epochs * 3) / 2;  // multiply by 1.5
+                
+                // Cap at maximum damage (20)
+                if(increment > 20) increment = 20;
                 
                 b->PRAC[b->open_row_id] += increment;
 
-                // Check for alert and insert into MOAT queue if needed
                 if(ENABLE_MOAT)
                 {
                     dram_moat_check_insert(b, b->open_row_id);

@@ -237,22 +237,23 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
     {
         if(cycle >= b->rowbufclose_cycle)
         {
-            // This is where precharge happens - update PRAC counter here for MOAT-RP
+            // Calculate how long the row was open before precharge
             if(ENABLE_RP)
             {
-                uns64 tON = cycle - b->rowbufopen_cycle;
-                // Convert cycles to ns (1 cycle = 0.25ns, so divide by 4)
-                tON = tON / 4;
+                uns64 cycles_open = cycle - b->rowbufopen_cycle;
+                // Convert cycles to ns based on 4GHz frequency
+                // At 4GHz, 1 cycle = 0.25ns, so multiply by 0.25
+                uns64 tON = (cycles_open * 25) / 100;  // Multiply by 0.25 using integer math
                 
-                // Calculate number of 180ns epochs
-                uns num_epochs = tON / 180;
-                if(tON % 180) num_epochs++; // Round up for partial epochs
-                
-                // Each epoch causes 1.5x damage
-                uns increment = (num_epochs * 3) / 2;  // multiply by 1.5
-                
-                // Cap at maximum damage (20)
-                if(increment > 20) increment = 20;
+                // Calculate PRAC increment based on tON duration as per paper
+                uns increment = 0;
+                if(tON <= 180) {  // up to 180ns
+                    increment = 1;
+                } else if(tON <= 360) {  // up to 360ns
+                    increment = 2;
+                } else if(tON <= 3490) {  // up to tREFI-tRFC (3490ns)
+                    increment = 20;
+                }
                 
                 b->PRAC[b->open_row_id] += increment;
 

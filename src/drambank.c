@@ -227,16 +227,19 @@ static void update_row_pattern_counter(DRAM_Bank *b)
     if(!b->row_valid) return;
     
     uns64 cycles_open = cycle - b->rowbufopen_cycle;
-    uns64 tON = cycles_open / 4;  // Convert cycles to ns (4GHz)
+    // Convert cycles to ns (4GHz = 4 cycles per ns)
+    uns64 tON = cycles_open / 4;
     
-    uns increment = 0;
-    if(tON <= 180) {
-        increment = 1;
-    } else if(tON <= 360) {
-        increment = 2;
-    } else if(tON <= 3490) {
-        increment = 20;
-    }
+    // Calculate damage based on time open
+    // Each 180ns epoch causes 1.5x damage
+    uns num_epochs = tON / 180;
+    if(tON % 180) num_epochs++; // Round up partial epochs
+    
+    // Apply damage per epoch (1.5x per epoch)
+    uns increment = (num_epochs * 3) / 2;
+    
+    // Cap at maximum damage (20)
+    if(increment > 20) increment = 20;
     
     b->PRAC[b->open_row_id] += increment;
     
@@ -310,7 +313,9 @@ uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
 
     if(new_act) {
         b->s_ACT++;
-        b->PRAC[rowid]++;
+        // Increment PRAC by 2 for each activation to account for both
+        // the activation itself and potential row-open time
+        b->PRAC[rowid] += 2;
         
         if(ENABLE_MOAT) {
             dram_moat_check_insert(b, rowid);

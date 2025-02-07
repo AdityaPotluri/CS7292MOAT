@@ -224,6 +224,7 @@ the effective damage as PRAC counter times DPE (1.5x). */
 // Helper function to update PRAC on row closure
 static void update_row_pattern_counter(DRAM_Bank *b) 
 {
+  if (ENABLE_RP) {
     if(!b->row_valid) return;
     
     uns64 cycles_open = cycle - b->rowbufopen_cycle;
@@ -231,21 +232,18 @@ static void update_row_pattern_counter(DRAM_Bank *b)
     uns64 tON = cycles_open / 4;
     
     // Calculate damage based on time open
-    // Each 180ns epoch causes 1.5x damage
-    uns num_epochs = tON / 180;
-    if(tON % 180) num_epochs++; // Round up partial epochs
-    
-    // Apply damage per epoch (1.5x per epoch)
-    uns increment = (num_epochs * 3) / 2;
-    
-    // Cap at maximum damage (20)
-    if(increment > 20) increment = 20;
+    uns increment = 0;
+    if(tON <= 180) {
+        increment = 4;  // Increased base increment
+    } else if(tON <= 360) {
+        increment = 8;  // Double the base for longer open time
+    } else if(tON <= 3490) {
+        increment = 20; // Maximum for very long open times
+    }
     
     b->PRAC[b->open_row_id] += increment;
-    
-    if(ENABLE_MOAT) {
-        dram_moat_check_insert(b, b->open_row_id);
-    }
+  }
+
 }
 
 uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
@@ -258,14 +256,13 @@ uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
     if((type == DRAM_REQ_RD) || (type == DRAM_REQ_WB)) {
         uns64 act_delay=0;
 
-        if(b->row_valid) {
-            if(cycle >= b->rowbufclose_cycle) {
-                update_row_pattern_counter(b);  // Update PRAC before closing row
-                b->row_valid = FALSE;
-                uns64 delta = cycle - b->rowbufclose_cycle;
-                if(delta < tPRE) {
-                    act_delay += (tPRE-delta);
-                }
+        // Only update PRAC on actual row closure
+        if(b->row_valid && cycle >= b->rowbufclose_cycle) {
+            update_row_pattern_counter(b);  // Update PRAC before closing row
+            b->row_valid = FALSE;
+            uns64 delta = cycle - b->rowbufclose_cycle;
+            if(delta < tPRE) {
+                act_delay += (tPRE-delta);
             }
         }
 
@@ -279,7 +276,8 @@ uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
         } else {
             act_delay=0;
             if(b->open_row_id != rowid) {
-                update_row_pattern_counter(b);  // Update PRAC before row conflict
+                // Row conflict causes precharge, so update PRAC
+                update_row_pattern_counter(b);
                 uns64 ras_delay=0, pre_delay=tPRE;
                 uns64 delta = cycle - b->rowbufopen_cycle;
                 if(delta < tRAS) {
@@ -299,27 +297,15 @@ uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
         b->sleep_cycle = cycle + act_delay + tRDRD;
     }
 
-    if(type == DRAM_REQ_NRR) {
-        update_row_pattern_counter(b);  // Update PRAC before NRR
-        b->status = DRAM_BANK_BUSY;
-        b->sleep_cycle = cycle + (2*tRC);
-        b->row_valid = FALSE;
-    }
-
+    // Only update PRAC on operations that force row closure
     if(type == DRAM_REQ_REF) {
-        update_row_pattern_counter(b);  // Update PRAC before refresh
+        update_row_pattern_counter(b);
         dram_bank_refresh(b,cycle);
     }
 
     if(new_act) {
         b->s_ACT++;
-        // Increment PRAC by 2 for each activation to account for both
-        // the activation itself and potential row-open time
-        b->PRAC[rowid] += 2;
-        
-        if(ENABLE_MOAT) {
-            dram_moat_check_insert(b, rowid);
-        }
+        b->PRAC[rowid] += 1;
     }
 
     return retval;

@@ -221,119 +221,103 @@ crements the PRAC counter by 1, for up-to 360ns by 2, and
 up-to 3490ns (tREFI-tRFC) by 20. Then, MOAT can obtain
 the effective damage as PRAC counter times DPE (1.5x). */
 
-uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
+// Helper function to update PRAC on row closure
+static void update_row_pattern_counter(DRAM_Bank *b) 
 {
-  uns64 retval=0;
-  Flag new_act=FALSE; // did we do a new activation?
+    if(!b->row_valid) return;
+    
+    uns64 cycles_open = cycle - b->rowbufopen_cycle;
+    uns64 tON = cycles_open / 4;  // Convert cycles to ns (4GHz)
+    
+    uns increment = 0;
+    if(tON <= 180) {
+        increment = 1;
+    } else if(tON <= 360) {
+        increment = 2;
+    } else if(tON <= 3490) {
+        increment = 20;
+    }
+    
+    b->PRAC[b->open_row_id] += increment;
+    
+    if(ENABLE_MOAT) {
+        dram_moat_check_insert(b, b->open_row_id);
+    }
+}
 
-  assert(b->status != DRAM_BANK_BUSY);
+uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
+{
+    uns64 retval=0;
+    Flag new_act=FALSE;
+    
+    assert(b->status != DRAM_BANK_BUSY);
 
-  // if type == N, figure out the delay, sleep time, rowbuffer staus
-  if( (type == DRAM_REQ_RD) || (type == DRAM_REQ_WB)){
-    uns64 act_delay=0;
+    if((type == DRAM_REQ_RD) || (type == DRAM_REQ_WB)) {
+        uns64 act_delay=0;
 
-    //check for early page closure
-    if(b->row_valid)
-    {
-        if(cycle >= b->rowbufclose_cycle)
-        {
-            // At precharge time, calculate how long the row was open
-            
-                uns64 cycles_open = cycle - b->rowbufopen_cycle;
-                // Convert cycles to ns (4 cycles = 1ns at 4GHz)
-                uns64 tON = cycles_open / 4;
-                
-                // Calculate PRAC increment based on tON duration
-                uns increment = 0;
-                if(tON <= 180) {  // up to 180ns
-                    increment = 1;
-                } else if(tON <= 360) {  // up to 360ns
-                    increment = 2;
-                } else if(tON <= 3490) {  // up to tREFI-tRFC (3490ns)
-                    increment = 20;
+        if(b->row_valid) {
+            if(cycle >= b->rowbufclose_cycle) {
+                update_row_pattern_counter(b);  // Update PRAC before closing row
+                b->row_valid = FALSE;
+                uns64 delta = cycle - b->rowbufclose_cycle;
+                if(delta < tPRE) {
+                    act_delay += (tPRE-delta);
                 }
-                
-                b->PRAC[b->open_row_id] += increment;
-
-                if(ENABLE_MOAT)
-                {
-                    dram_moat_check_insert(b, b->open_row_id);
-                }
-            
-            
-            b->row_valid = FALSE;
-            uns64 delta = cycle - b->rowbufclose_cycle;
-            if(delta < tPRE)
-            {
-                act_delay += (tPRE-delta);
             }
         }
-    }
 
-    // empty
-    if(b->row_valid == FALSE)
-    {
-      act_delay+=tACT;
-      b->rowbufopen_cycle = cycle;
-      b->rowbufclose_cycle = b->rowbufopen_cycle+cycle+DRAM_MAX_TOPEN; // page closure
-      b->row_valid = TRUE;
-      b->open_row_id = rowid;
-      new_act = TRUE;
-    }
-    else
-    {
-      act_delay=0; // hit
-
-      // conflict
-      if(b->open_row_id != rowid)
-      {
-        uns64 ras_delay=0, pre_delay=tPRE;
-        uns64 delta = cycle - b->rowbufopen_cycle;
-        if(delta < tRAS){
-          ras_delay = tRAS-delta;
+        if(b->row_valid == FALSE) {
+            act_delay+=tACT;
+            b->rowbufopen_cycle = cycle;
+            b->rowbufclose_cycle = b->rowbufopen_cycle+cycle+DRAM_MAX_TOPEN;
+            b->row_valid = TRUE;
+            b->open_row_id = rowid;
+            new_act = TRUE;
+        } else {
+            act_delay=0;
+            if(b->open_row_id != rowid) {
+                update_row_pattern_counter(b);  // Update PRAC before row conflict
+                uns64 ras_delay=0, pre_delay=tPRE;
+                uns64 delta = cycle - b->rowbufopen_cycle;
+                if(delta < tRAS) {
+                    ras_delay = tRAS-delta;
+                }
+                act_delay += (ras_delay + pre_delay +tACT);
+                b->rowbufopen_cycle = cycle + ras_delay + tPRE;
+                b->rowbufclose_cycle = b->rowbufopen_cycle+DRAM_MAX_TOPEN;
+                b->row_valid = TRUE;
+                b->open_row_id = rowid;
+                new_act=TRUE;
+            }
         }
-        act_delay += (ras_delay + pre_delay +tACT);
-        b->rowbufopen_cycle = cycle + ras_delay + tPRE ;
-        b->rowbufclose_cycle = b->rowbufopen_cycle+DRAM_MAX_TOPEN; // page closure
-        b->row_valid = TRUE;
-        b->open_row_id = rowid;
-        new_act=TRUE;
-      }
+
+        retval = act_delay;
+        b->status = DRAM_BANK_BUSY;
+        b->sleep_cycle = cycle + act_delay + tRDRD;
     }
 
-    retval = act_delay;
-    b->status = DRAM_BANK_BUSY;
-    b->sleep_cycle = cycle + act_delay + tRDRD;
-  }
-
-  if(type == DRAM_REQ_NRR)
-  {
-    b->status = DRAM_BANK_BUSY;
-    b->sleep_cycle = cycle + (2*tRC);
-    b->row_valid = FALSE;
-  }
-
-  if(type == DRAM_REQ_REF)
-  {
-    dram_bank_refresh(b,cycle);
-  }
-
-  //---- if ACT done, update states, PRAC, MOAT -------
-  if(new_act)
-  {
-    b->s_ACT++; // counted only for RD and WR
-    
-    // Always increment PRAC for activations
-    b->PRAC[rowid]++;
-    
-    // Check MOAT queue after activation
-    if(ENABLE_MOAT)
-    {
-        dram_moat_check_insert(b, rowid);
+    if(type == DRAM_REQ_NRR) {
+        update_row_pattern_counter(b);  // Update PRAC before NRR
+        b->status = DRAM_BANK_BUSY;
+        b->sleep_cycle = cycle + (2*tRC);
+        b->row_valid = FALSE;
     }
-  }
 
-  return retval;
+    if(type == DRAM_REQ_REF) {
+        update_row_pattern_counter(b);  // Update PRAC before refresh
+        dram_bank_refresh(b,cycle);
+    }
+
+    if(new_act) {
+        b->s_ACT++;
+        b->PRAC[rowid]++;
+        
+        if(ENABLE_MOAT) {
+            dram_moat_check_insert(b, rowid);
+        }
+    }
+
+    return retval;
 }
 
 

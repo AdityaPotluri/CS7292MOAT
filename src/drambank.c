@@ -299,7 +299,6 @@ uns64 dram_bank_service(DRAM_Bank *b, DRAM_ReqType type, uns64 rowid)
 
     // Only update PRAC on operations that force row closure
     if(type == DRAM_REQ_REF) {
-        update_row_pattern_counter(b);
         dram_bank_refresh(b,cycle);
     }
 

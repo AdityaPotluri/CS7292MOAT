@@ -238,8 +238,7 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
         if(cycle >= b->rowbufclose_cycle)
         {
             // At precharge time, calculate how long the row was open
-            if(ENABLE_RP)
-            {
+            
                 uns64 cycles_open = cycle - b->rowbufopen_cycle;
                 // Convert cycles to ns (4 cycles = 1ns at 4GHz)
                 uns64 tON = cycles_open / 4;
@@ -260,7 +259,7 @@ uns64 dram_bank_service(DRAM_Bank *b,  DRAM_ReqType type, uns64 rowid)
                 {
                     dram_moat_check_insert(b, b->open_row_id);
                 }
-            }
+            
             
             b->row_valid = FALSE;
             uns64 delta = cycle - b->rowbufclose_cycle;

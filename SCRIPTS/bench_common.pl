@@ -35,10 +35,10 @@ $SUITES{'spec2k17act'}      =
         gcc_17';
   
 $SUITES{'lab1'}      = 
-    'bwaves_17.mat.gz  
-    lbm_17.mat.gz  
-    parest_17.mat.gz  
-    roms_17.mat.gz';
+    'bwaves_17 
+    lbm_17
+    parest_17
+    roms_17';
 
 
 

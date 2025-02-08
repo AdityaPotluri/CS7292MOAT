@@ -234,9 +234,9 @@ static void update_row_pattern_counter(DRAM_Bank *b)
     // Calculate damage based on time open
     uns increment = 0;
     if(tON <= 180) {
-        increment = 4;  // Increased base increment
+        increment = 1;  // Increased base increment
     } else if(tON <= 360) {
-        increment = 8;  // Double the base for longer open time
+        increment = 2;  // Double the base for longer open time
     } else if(tON <= 3490) {
         increment = 20; // Maximum for very long open times
     }

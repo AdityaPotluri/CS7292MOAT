@@ -33,6 +33,12 @@ $SUITES{'spec2k17act'}      =
         wrf_17
        x264_17
         gcc_17';
+  
+$SUITES{'lab1'}      = 
+    'bwaves_17.mat.gz  
+    lbm_17.mat.gz  
+    parest_17.mat.gz  
+    roms_17.mat.gz';
 
 
 

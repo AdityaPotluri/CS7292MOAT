@@ -2,7 +2,7 @@ RM        := /bin/rm -rf
 SIM       := ./sim
 CC        := g++
 # CFLAGS    := -lz -O2 -lm  -W -Wall -Wno-deprecated -Wno-unknown-warning-option -Wno-self-assign -Wno-unused-parameter -Wno-unused-but-set-variable
-CFLAGS    := -g -O0 -lz -lm  -W -Wall -Wno-deprecated -Wno-unknown-warning-option -Wno-self-assign -Wno-unused-parameter -Wno-unused-but-set-variable
+CFLAGS    := -g -O3 -lz -lm  -W -Wall -Wno-deprecated -Wno-unknown-warning-option -Wno-self-assign -Wno-unused-parameter -Wno-unused-but-set-variable
 DFLAGS    :=  -fsanitize=address
 PFLAGS    := -pg
 
